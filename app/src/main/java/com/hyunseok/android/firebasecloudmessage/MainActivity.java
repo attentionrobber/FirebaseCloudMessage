@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
                     datas.add(user);
                 }
                 adapter.notifyDataSetChanged();
-                
+
             }
 
             @Override
