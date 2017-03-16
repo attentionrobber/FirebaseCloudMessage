@@ -23,6 +23,11 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.iid.FirebaseInstanceId;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,10 +71,53 @@ public class MainActivity extends AppCompatActivity {
 
     public void sendNotification(View view) {
         String msg = et_message.getText().toString();
+        String token = tv_token.getText().toString();
 
-        if(!"".equals(msg)) { // 공백이 아닐때(= 입력값이 있을 때)
-
+        if("".equals(msg)) { // 공백일 경우(= 입력값이 없을 때)
+            Toast.makeText(this, "메세지를 입력하세요!", Toast.LENGTH_SHORT).show();
+            return;
+        } else if("".equals(token)) {
+            Toast.makeText(this, "받는 사람을 선택하세요!", Toast.LENGTH_SHORT).show();
         }
+
+        String result = "";
+
+        // 1. FCM 서버정보 세팅
+        String server_url = "http://192.168.1.182:8080/";
+
+        // 2. POST 메세지 세팅
+        String post_data = "to_token="+token+"&msg="+msg;
+
+        // 3. HttpUrlConnection 을 사용해서 FCM서버측으로 메시지를 전송한다
+        try {
+            //     a. 서버연결
+            URL url = new URL(server_url);
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            //     b. header 설정
+            con.setRequestMethod("POST");
+            //     c. POST데이터(body) 전송
+            con.setDoOutput(true);
+            OutputStream os = con.getOutputStream();
+            os.write(post_data.getBytes());
+            os.flush();
+            os.close();
+            //     d. 전송후 결과처리
+            int responseCode = con.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) { // code 200
+                // 결과처리후 FCM 서버측에서 발송한 결과메시지를 꺼낸다.
+                BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                String dataLine = "";
+                // 메시지를 한줄씩 읽어서 result 변수에 담아두고
+                while ((dataLine = br.readLine()) != null) {
+                    result = result + dataLine;
+                }
+                br.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        Toast.makeText(this, ""+result, Toast.LENGTH_SHORT).show();
     }
 
     public void signIn(View view) {
