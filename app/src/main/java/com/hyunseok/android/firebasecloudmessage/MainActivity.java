@@ -72,67 +72,67 @@ public class MainActivity extends AppCompatActivity {
 
     public void sendNotification(View view) {
 
+        final String sender = et_id.getText().toString();
         final String msg = et_message.getText().toString();
         final String token = tv_token.getText().toString();
 
-        if("".equals(msg)) { // 공백일 경우(= 입력값이 없을 때)
-            Toast.makeText(this, "메세지를 입력하세요!", Toast.LENGTH_SHORT).show();
-            return;
-        } else if("".equals(token)) {
-            Toast.makeText(this, "받는 사람을 선택하세요!", Toast.LENGTH_SHORT).show();
-        }
+        if("".equals(msg)){ // 입력값이 있으면 노티를 날려준다
+            Toast.makeText(this,"메시지를 입력하세요!",Toast.LENGTH_SHORT).show();
+        }else if("".equals(token)){
+            Toast.makeText(this,"받는사람을 선택하세요!",Toast.LENGTH_SHORT).show();
+        }else {
 
-        new AsyncTask<Void, Void, String>() {
+            new AsyncTask<Void, Void, String>() {
 
-            @Override
-            protected String doInBackground(Void... params) {
-                String result = "";
+                @Override
+                protected String doInBackground(Void... params) {
+                    String result = "";
 
-                // 1. FCM 서버정보 세팅
-                String server_url = "http://192.168.1.182:8080/";
+                    // 1. 내 서버정보 세팅
+                    String server_url = "http://192.168.1.182:8080/";
+                    // 2. 서버로 전송할 POST message 세팅
+                    String post_data = "to_token=" + token + "&msg=" + msg + "&sender=" + sender;
 
-                // 2. POST 메세지 세팅
-                String post_data = "to_token="+token+"&msg="+msg;
-
-                // 3. HttpUrlConnection 을 사용해서 FCM서버측으로 메시지를 전송한다
-                try {
-                    //     a. 서버연결
-                    URL url = new URL(server_url);
-                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
-                    //     b. header 설정
-                    con.setRequestMethod("POST");
-                    //     c. POST데이터(body) 전송
-                    con.setDoOutput(true);
-                    OutputStream os = con.getOutputStream();
-                    os.write(post_data.getBytes());
-                    os.flush();
-                    os.close();
-                    //     d. 전송후 결과처리
-                    int responseCode = con.getResponseCode();
-                    if (responseCode == HttpURLConnection.HTTP_OK) { // code 200
-                        // 결과처리후 FCM 서버측에서 발송한 결과메시지를 꺼낸다.
-                        BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
-                        String dataLine = "";
-                        // 메시지를 한줄씩 읽어서 result 변수에 담아두고
-                        while ((dataLine = br.readLine()) != null) {
-                            result = result + dataLine;
+                    try {
+                        // 3. HttpUrlConnection 을 사용해서 내 서버로 메시지를 전송한다
+                        //     a.서버연결
+                        URL url = new URL(server_url);
+                        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                        //     b.header 설정
+                        con.setRequestMethod("POST");
+                        //     c.POST데이터(body) 전송
+                        con.setDoOutput(true);
+                        OutputStream os = con.getOutputStream();
+                        os.write(post_data.getBytes());
+                        os.flush();
+                        os.close();
+                        //     d.전송후 결과처리
+                        int responseCode = con.getResponseCode();
+                        if (responseCode == HttpURLConnection.HTTP_OK) { // code 200
+                            // 결과처리후 내 서버에서 발송된 결과메시지를 꺼낸다.
+                            BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                            String dataLine = "";
+                            // 메시지를 한줄씩 읽어서 result 변수에 담아두고
+                            while ((dataLine = br.readLine()) != null) {
+                                result = result + dataLine;
+                            }
+                            br.close();
                         }
-                        br.close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
+
+                    return result;
                 }
 
-
-                return null;
-            }
-
-            @Override
-            protected void onPostExecute(String result) {
-                super.onPostExecute(result);
-                Toast.makeText(MainActivity.this, ""+result, Toast.LENGTH_SHORT).show();
-            }
-        }.execute();
+                @Override
+                protected void onPostExecute(String result) {
+                    super.onPostExecute(result);
+                    // 결과처리된 메시지를 화면에 보여준다
+                    Toast.makeText(MainActivity.this, result, Toast.LENGTH_SHORT).show();
+                }
+            }.execute();
+        }
 
     }
 
